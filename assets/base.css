@@ -30,7 +30,7 @@ section:first-child { padding-top:0; border-top:0; }
 section:last-child { padding-bottom:0; }
 .lead { font-size:19px; max-width:40em; }
 .note { color:var(--muted); font-size:14px; }
-.status { border-left:3px solid #7896a2; padding-left:14px; font-size:14px; }
+.status,.preview-note { border-left:3px solid #7896a2; padding-left:14px; font-size:14px; }
 .actions { display:flex; gap:12px; flex-wrap:wrap; margin-block:22px; }
 .button { display:inline-block; padding:7px 14px; border:1px solid #7a94a1; background:#edf2f2; color:var(--ink); text-decoration:none; font-size:14px; font-weight:600; }
 .button.primary { background:var(--link); color:white; border-color:var(--link); }
