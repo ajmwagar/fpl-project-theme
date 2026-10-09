@@ -12,6 +12,7 @@ struct Project {
     name: &'static str,
     url: &'static str,
     colors: [&'static str; 7],
+    accents: &'static [(&'static str, &'static str)],
     icon: &'static str,
 }
 const PROJECTS: [Project; 2] = [
@@ -22,6 +23,19 @@ const PROJECTS: [Project; 2] = [
         colors: [
             "#fafaf7", "#e9eceb", "#25313a", "#59666d", "#cbd2d4", "#245b81", "#203440",
         ],
+        accents: &[
+            ("header-rule", "#6c919e"),
+            ("header-ink", "#f5f6f2"),
+            ("focus", "#ae7222"),
+            ("note-rule", "#7896a2"),
+            ("button-border", "#7a94a1"),
+            ("button-bg", "#edf2f2"),
+            ("button-fill", "#245b81"),
+            ("button-hover", "#e8edef"),
+            ("button-active", "#203440"),
+            ("surface", "#e8edef"),
+            ("code-bg", "#eef1ef"),
+        ],
         icon: include_str!("../assets/holodeck.svg"),
     },
     Project {
@@ -30,6 +44,19 @@ const PROJECTS: [Project; 2] = [
         url: "https://fungos.dev/",
         colors: [
             "#e5e8e2", "#c9cdca", "#202d26", "#46554b", "#a0aaa0", "#28543b", "#283d31",
+        ],
+        accents: &[
+            ("header-rule", "#7e9273"),
+            ("header-ink", "#e5eadd"),
+            ("focus", "#714b21"),
+            ("note-rule", "#73836a"),
+            ("button-border", "#6b7e6d"),
+            ("button-bg", "#e5e8e2"),
+            ("button-fill", "#355a3d"),
+            ("button-hover", "#d4ddd0"),
+            ("button-active", "#284a31"),
+            ("surface", "#d3dace"),
+            ("code-bg", "#dce0d7"),
         ],
         icon: include_str!("../assets/fungos.svg"),
     },
@@ -49,6 +76,9 @@ fn stylesheet() -> String {
             .iter()
             .zip(p.colors)
         {
+            css += &format!("--{name}:{color};");
+        }
+        for (name, color) in p.accents {
             css += &format!("--{name}:{color};");
         }
         css += "}\n";
