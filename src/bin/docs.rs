@@ -94,14 +94,17 @@ fn url(value: &str) -> Result<&str> {
 fn revision(repo: &Path, source: &Path) -> Result<(String, String, String)> {
     let root = PathBuf::from(git(repo, &["rev-parse", "--show-toplevel"])?);
     let relative = source
-        .strip_prefix(root)?
+        .strip_prefix(&root)?
         .to_str()
         .ok_or("Non-UTF8 source")?;
-    git(repo, &["ls-files", "--error-unmatch", "--", relative])?;
-    if !git(repo, &["status", "--porcelain", "--", relative])?.is_empty() {
+    git(&root, &["ls-files", "--error-unmatch", "--", relative])?;
+    if !git(&root, &["status", "--porcelain", "--", relative])?.is_empty() {
         return Err(format!("Commit canonical Markdown before publishing: {relative}").into());
     }
-    let log = git(repo, &["log", "-1", "--format=%H%n%cs%n%s", "--", relative])?;
+    let log = git(
+        &root,
+        &["log", "-1", "--format=%H%n%cs%n%s", "--", relative],
+    )?;
     let mut lines = log.lines();
     Ok((
         lines.next().ok_or("Missing source commit")?.into(),
@@ -527,7 +530,8 @@ mod tests {
         git(&dir, &["init"]).unwrap();
         git(&dir, &["config", "user.email", "test@example.invalid"]).unwrap();
         git(&dir, &["config", "user.name", "Test"]).unwrap();
-        fs::write(dir.join("source.md"), "# Original\n").unwrap();
+        fs::create_dir_all(dir.join("docs-source/projects")).unwrap();
+        fs::write(dir.join("docs-source/projects/source.md"), "# Original\n").unwrap();
         fs::write(dir.join("code.rs"), "original").unwrap();
         git(&dir, &["add", "."]).unwrap();
         git(
@@ -535,8 +539,9 @@ mod tests {
             &["commit", "-m", "Document <initial> & reviewed code"],
         )
         .unwrap();
-        let source = fs::canonicalize(dir.join("source.md")).unwrap();
+        let source = fs::canonicalize(dir.join("docs-source/projects/source.md")).unwrap();
         let first = revision(&dir, &source).unwrap();
+        assert_eq!(revision(source.parent().unwrap(), &source).unwrap(), first);
         fs::write(dir.join("generated.html"), "generated").unwrap();
         git(&dir, &["add", "."]).unwrap();
         git(&dir, &["commit", "-m", "Publish rendered page"]).unwrap();
