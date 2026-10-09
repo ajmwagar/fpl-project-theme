@@ -107,3 +107,7 @@ html[data-project="fungos"] tbody th { width:22%; }
 .manual article { overflow-x:auto; }
 .manual article table { min-width:580px; }
 .manual article pre { overflow-x:auto; }
+.docs-layout .manual { margin-top:0; }
+.docs-sidebar { position:sticky; top:24px; max-height:calc(100vh - 48px); overflow-y:auto; }
+.docs-sidebar a[aria-current="page"] { font-weight:650; }
+@media(max-width:800px) { .docs-sidebar { position:static; max-height:none; } }

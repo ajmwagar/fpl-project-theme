@@ -300,7 +300,76 @@ fn sync(path: &Path, bytes: &[u8], check: bool) -> Result<()> {
     }
     Ok(())
 }
-fn generate(args: &BTreeMap<String, String>, check: bool) -> Result<()> {
+fn sidebar(
+    article: &str,
+    site: &Path,
+    output: &Path,
+    prefix: &str,
+    peers: &[BTreeMap<String, String>],
+) -> Result<String> {
+    let mut out = String::from(
+        "<aside class=\"resources docs-sidebar\" aria-label=\"Help and documentation\">",
+    );
+    if !peers.is_empty() {
+        out += "<nav aria-label=\"Help guides\"><h2>Documentation</h2><ul>";
+        for peer in peers {
+            let peer_site = fs::canonicalize(peer.get("site").ok_or("Missing peer site")?)?;
+            if peer_site != site {
+                continue;
+            }
+            let path = PathBuf::from(peer.get("output").ok_or("Missing peer output")?);
+            let relative = path
+                .strip_prefix(site)
+                .map_err(|_| "Peer output outside site")?;
+            if relative
+                .components()
+                .any(|c| matches!(c, std::path::Component::ParentDir))
+            {
+                return Err("Peer output traverses site".into());
+            }
+            let source = fs::read_to_string(peer.get("source").ok_or("Missing peer source")?)?;
+            let (meta, body) = metadata(&source)?;
+            let title = meta
+                .title
+                .or_else(|| {
+                    body.lines()
+                        .find_map(|line| line.strip_prefix("# ").map(str::to_owned))
+                })
+                .ok_or("Guide needs a title")?;
+            let current = if path == output {
+                " aria-current=\"page\""
+            } else {
+                ""
+            };
+            out += &format!(
+                "<li><a href=\"{}{}\"{current}>{}</a></li>",
+                escape(prefix),
+                percent_path(relative.to_str().ok_or("Non-UTF8 peer output")?),
+                escape(&title)
+            );
+        }
+        out += "</ul></nav>";
+    }
+    out += "<nav aria-label=\"On this page\"><h2>On this page</h2><ul>";
+    // Read the renderer's emitted heading IDs so duplicate-heading anchors agree.
+    for section in article.split("<h2 id=\"").skip(1) {
+        let (id, rest) = section
+            .split_once("\">")
+            .ok_or("Malformed rendered heading")?;
+        let label = rest
+            .split_once("</h2>")
+            .ok_or("Unclosed rendered heading")?
+            .0;
+        out += &format!("<li><a href=\"#{}\">{label}</a></li>", escape(id));
+    }
+    out += "</ul></nav><a href=\"#documentation-provenance\">Source and freshness</a></aside>";
+    Ok(out)
+}
+fn generate(
+    args: &BTreeMap<String, String>,
+    check: bool,
+    peers: &[BTreeMap<String, String>],
+) -> Result<()> {
     let required = |key: &str| -> Result<&str> {
         args.get(key)
             .map(String::as_str)
@@ -374,8 +443,11 @@ fn generate(args: &BTreeMap<String, String>, check: bool) -> Result<()> {
         .ok_or("Invalid export")?
         .to_str()
         .ok_or("Non-UTF8 export")?;
+    let article = markdown_at(body, Some((repository_url, &sha, source_path)))?;
+    let home = escape(&active.home_url(&prefix));
+    let sidebar = sidebar(&article, &site, &output, &prefix, peers)?;
     let html = format!(
-        "<!doctype html>\n<html lang=\"en\" data-project=\"{}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{}</title><link rel=\"stylesheet\" href=\"{prefix}theme/theme.css\"><link rel=\"icon\" href=\"{prefix}theme/{}.svg\"><script defer src=\"{prefix}theme/docs.js\"></script></head><body class=\"manual-page\"><a class=\"skip\" href=\"#content\">Skip to content</a><header class=\"masthead\"><div class=\"wrap\">{}<nav aria-label=\"Documentation navigation\"><a href=\"{prefix}index.html\">Home</a><a href=\"{}\">Source Markdown</a></nav></div></header><main class=\"manual wrap\" id=\"content\"><div class=\"docs-actions\"><button type=\"button\" class=\"button\" data-copy-markdown=\"{}\">Copy for LLM</button><a href=\"{}\" download>Download Markdown</a><span role=\"status\" aria-live=\"polite\" data-copy-status></span></div><article>{}</article><footer class=\"docs-provenance\"><h2>Documentation provenance</h2><p>Last documentation change: <a href=\"{repository_url}/commit/{sha}\"><code>{}</code></a> · {} · {}</p><p><a href=\"{}\">Canonical source at this revision</a>. Markdown export preserves the canonical source exactly.</p>{}</footer></main></body></html>\n",
+        "<!doctype html>\n<html lang=\"en\" data-project=\"{}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{}</title><link rel=\"stylesheet\" href=\"{prefix}theme/theme.css\"><link rel=\"icon\" href=\"{prefix}theme/{}.svg\"><script defer src=\"{prefix}theme/docs.js\"></script></head><body class=\"manual-page\"><a class=\"skip\" href=\"#content\">Skip to content</a><header class=\"masthead\"><div class=\"wrap\">{}<nav aria-label=\"Documentation navigation\"><a href=\"{home}\">Home</a><a href=\"{}\">Source Markdown</a></nav></div></header><div class=\"site-grid wrap docs-layout\">{sidebar}<main class=\"manual\" id=\"content\"><div class=\"docs-actions\"><button type=\"button\" class=\"button\" data-copy-markdown=\"{}\">Copy for LLM</button><a href=\"{}\" download>Download Markdown</a><span role=\"status\" aria-live=\"polite\" data-copy-status></span></div><article>{}</article><footer class=\"docs-provenance\"><h2 id=\"documentation-provenance\">Documentation provenance</h2><p>Last documentation change: <a href=\"{repository_url}/commit/{sha}\"><code>{}</code></a> · {} · {}</p><p><a href=\"{}\">Canonical source at this revision</a>. Markdown export preserves the canonical source exactly.</p>{}</footer></main></div></body></html>\n",
         escape(required("project")?),
         escape(&title),
         escape(required("project")?),
@@ -383,7 +455,7 @@ fn generate(args: &BTreeMap<String, String>, check: bool) -> Result<()> {
         escape(file_name),
         escape(file_name),
         escape(file_name),
-        markdown_at(body, Some((repository_url, &sha, source_path)))?,
+        article,
         &sha[..7],
         escape(&date),
         escape(&subject),
@@ -449,6 +521,7 @@ fn main() -> Result<()> {
         }
         let manifest = fs::canonicalize(manifest)?;
         let parent = manifest.parent().ok_or("Missing manifest directory")?;
+        let mut entries = Vec::new();
         for (i, line) in fs::read_to_string(&manifest)?.lines().enumerate() {
             if line.trim().is_empty() || line.starts_with('#') {
                 continue;
@@ -491,11 +564,14 @@ fn main() -> Result<()> {
             if values.contains_key("fail-on-stale") {
                 entry.insert("fail-on-stale".into(), String::new());
             }
-            generate(&entry, check)?;
+            entries.push(entry);
+        }
+        for entry in &entries {
+            generate(entry, check, &entries)?;
         }
         Ok(())
     } else {
-        generate(&values, check)
+        generate(&values, check, &[])
     }
 }
 #[cfg(test)]
@@ -531,7 +607,11 @@ mod tests {
         git(&dir, &["config", "user.email", "test@example.invalid"]).unwrap();
         git(&dir, &["config", "user.name", "Test"]).unwrap();
         fs::create_dir_all(dir.join("docs-source/projects")).unwrap();
-        fs::write(dir.join("docs-source/projects/source.md"), "# Original\n").unwrap();
+        fs::write(
+            dir.join("docs-source/projects/source.md"),
+            "# Original\n\n## Models\n\n## Models\n",
+        )
+        .unwrap();
         fs::write(dir.join("code.rs"), "original").unwrap();
         git(&dir, &["add", "."]).unwrap();
         git(
@@ -556,8 +636,9 @@ mod tests {
             ("project".into(), "holodeck".into()),
             ("repository-url".into(), "https://example.com/repo".into()),
         ]);
-        generate(&args, false).unwrap();
-        generate(&args, true).unwrap();
+        let peers = vec![args.clone()];
+        generate(&args, false, &peers).unwrap();
+        generate(&args, true, &peers).unwrap();
         assert_eq!(
             fs::read(dir.join("published/page.md")).unwrap(),
             fs::read(&source).unwrap()
@@ -567,8 +648,26 @@ mod tests {
                 .unwrap()
                 .contains("Document &lt;initial&gt; &amp; reviewed code")
         );
+        let page = fs::read_to_string(dir.join("published/page.html")).unwrap();
+        assert!(page.contains("aria-label=\"Help guides\""));
+        assert!(page.contains("href=\"#models-1\""));
+        assert!(page.contains("href=\"../index.html\">Home</a>"));
+        let mut umie = args.clone();
+        umie.insert("project".into(), "umie".into());
+        umie.insert(
+            "output".into(),
+            dir.join("projects/umie.html").to_str().unwrap().into(),
+        );
+        generate(&umie, false, &[umie.clone()]).unwrap();
+        let page = fs::read_to_string(dir.join("projects/umie.html")).unwrap();
+        assert!(page.contains("href=\"../projects/umie.html\">Home</a>"));
+        assert!(page.contains("aria-current=\"page\">Original</a>"));
+        assert_eq!(
+            theme::project("dcp").unwrap().home_url("../"),
+            "https://dcp.fpl.dev/"
+        );
         fs::write(dir.join("published/page.md"), "corrupted").unwrap();
-        assert!(generate(&args, true).is_err());
+        assert!(generate(&args, true, &[]).is_err());
         let meta = Meta {
             baseline: Some(first.0.clone()),
             watches: vec!["code.rs".into()],

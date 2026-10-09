@@ -152,6 +152,13 @@ pub(crate) fn project(id: &str) -> Result<&'static Project> {
         .ok_or("Unknown project".into())
 }
 impl Project {
+    pub(crate) fn home_url(&self, prefix: &str) -> String {
+        match self.page {
+            Some(page) => format!("{prefix}{page}"),
+            None if self.protocol => self.url.into(),
+            None => format!("{prefix}index.html"),
+        }
+    }
     fn documentation_page(&self) -> Option<&'static str> {
         if self.id == "dcp" {
             Some("projects/dcp.html")
@@ -191,15 +198,7 @@ pub(crate) fn dropdown(active: &Project, prefix: &str) -> String {
     let mut protocol_heading = false;
     for p in &PROJECTS {
         let (url, current, check) = if p.id == active.id {
-            (
-                if active.id == "dcp" {
-                    active.url.into()
-                } else {
-                    format!("{prefix}{}", active.page.unwrap_or("index.html"))
-                },
-                " aria-current=\"page\"",
-                " ✓",
-            )
+            (active.home_url(prefix), " aria-current=\"page\"", " ✓")
         } else {
             (
                 if active.id == "fungos" || active.page.is_some() {
