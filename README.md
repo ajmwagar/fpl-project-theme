@@ -53,5 +53,5 @@ Original theme/tool code: AGPL-3.0-or-later. Logo terms: `ASSET-NOTICES.md`.
 The source repository is initially private; the published styles remain readable.
 
 The dropdown groups DCP under **Protocols**, with its official mark, a protocol
-subtitle and black/cream/lime swatches from its existing site. DCP links to its
+subtitle and its own themed card background. DCP links to its
 own site; adding it here does not replace or restyle that site.

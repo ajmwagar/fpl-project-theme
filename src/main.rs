@@ -109,8 +109,8 @@ fn stylesheet() -> String {
         }
         css += "}\n";
         css += &format!(
-            ".project-{} {{ --project-header:{};--project-page:{};--project-paper:{}; }}\n",
-            p.id, p.colors[6], p.colors[1], p.colors[0]
+            ".project-{} {{ --project-header:{};--project-page:{};--project-paper:{};--project-ink:{}; }}\n",
+            p.id, p.colors[6], p.colors[1], p.colors[0], p.colors[2]
         );
     }
     css += include_str!("../assets/base.css");
@@ -138,9 +138,9 @@ fn dropdown(active: &Project, prefix: &str) -> String {
         } else {
             ""
         };
-        html+=&format!("<a class=\"project-option project-{}\" href=\"{url}\"{current}><img src=\"{prefix}theme/{}.svg\" width=\"30\" height=\"30\" alt=\"\"><span>{}{check}{subtitle}</span><span class=\"project-palette\" role=\"img\" aria-label=\"{} theme colors\"><i></i><i></i><i></i></span></a>\n",p.id,p.id,p.name,p.name);
+        html+=&format!("<a class=\"project-option project-{}\" href=\"{url}\"{current}><img src=\"{prefix}theme/{}.svg\" width=\"30\" height=\"30\" alt=\"\"><span>{}{check}{subtitle}</span></a>\n",p.id,p.id,p.name);
     }
-    html += "</nav>\n</details>";
+    html += &format!("</nav><script defer src=\"{prefix}theme/switcher.js\"></script>\n</details>");
     html
 }
 fn render_page(source: &str, active: &Project, prefix: &str) -> Result<String> {
@@ -273,6 +273,7 @@ fn main() -> Result<()> {
         stylesheet().as_bytes(),
         check,
     )?;
+    sync(&site.join("theme/switcher.js"), include_bytes!("../assets/switcher.js"), check)?;
     for p in &PROJECTS {
         sync(
             &site.join(format!("theme/{}.svg", p.id)),
@@ -321,6 +322,7 @@ mod tests {
         assert!(html.contains("project-group\">Protocols"));
         assert!(html.contains("Decision Catalog Protocol"));
         assert!(html.contains("../theme/dcp.svg"));
+        assert!(!html.contains("project-palette"));
     }
     #[test]
     fn install_is_idempotent() {
