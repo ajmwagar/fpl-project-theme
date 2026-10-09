@@ -175,7 +175,21 @@ fn main() -> Result<()> {
     if !revision.status.success() {
         return Err("Theme must be a committed checkout".into());
     }
+    let clean = Command::new("git")
+        .args([
+            "-C",
+            source.to_str().ok_or("Non-UTF8 theme path")?,
+            "diff",
+            "HEAD",
+            "--exit-code",
+            "--quiet",
+        ])
+        .status()?;
+    if !clean.success() {
+        return Err("Commit tracked theme changes before installing or checking a revision".into());
+    }
     let revision = String::from_utf8(revision.stdout)?.trim().to_owned();
+
     let pages = pages(&site)?;
     if pages.is_empty() {
         return Err("No HTML pages".into());
@@ -200,6 +214,16 @@ fn main() -> Result<()> {
             check,
         )?;
     }
+    sync(
+        &site.join("theme/LICENSE"),
+        include_str!("../LICENSE").as_bytes(),
+        check,
+    )?;
+    sync(
+        &site.join("theme/ASSET-NOTICES.md"),
+        include_str!("../ASSET-NOTICES.md").as_bytes(),
+        check,
+    )?;
     sync(
         &site.join("theme/REVISION"),
         format!("ajmwagar/fpl-project-theme\n{revision}\n").as_bytes(),
