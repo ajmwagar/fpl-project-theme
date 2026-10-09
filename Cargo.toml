@@ -3,4 +3,6 @@ name = "fpl-project-theme"
 version = "0.1.0"
 edition = "2024"
 license = "AGPL-3.0-or-later"
+default-run = "fpl-project-theme"
 [dependencies]
+pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }

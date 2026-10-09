@@ -100,3 +100,10 @@ html[data-project="fungos"] tbody th { width:22%; }
 :is(.masthead,.manual-page>header) .project-menu a.project-option { background:var(--project-paper); color:var(--project-ink); border-radius:4px; margin-block:3px; border-left:3px solid var(--project-header); }
 :is(.masthead,.manual-page>header) .project-menu a.project-option:hover { box-shadow:inset 0 0 0 1px var(--project-header); }
 .project-kind { color:inherit; opacity:.75; }
+
+.docs-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:22px; }
+.docs-actions [data-copy-status] { font-size:14px; }
+.docs-provenance { border-top:1px solid var(--line); margin-top:32px; padding-top:16px; font-size:14px; }
+.manual article { overflow-x:auto; }
+.manual article table { min-width:580px; }
+.manual article pre { overflow-x:auto; }

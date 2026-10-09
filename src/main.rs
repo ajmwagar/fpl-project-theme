@@ -7,9 +7,9 @@ use std::{
     process::Command,
 };
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
-struct Project {
+pub(crate) struct Project {
     id: &'static str,
-    name: &'static str,
+    pub(crate) name: &'static str,
     protocol: bool,
     subtitle: &'static str,
     page: Option<&'static str>,
@@ -145,11 +145,20 @@ const PROJECTS: [Project; 5] = [
         icon: include_str!("../assets/unibus.svg"),
     },
 ];
-fn project(id: &str) -> Result<&'static Project> {
+pub(crate) fn project(id: &str) -> Result<&'static Project> {
     PROJECTS
         .iter()
         .find(|p| p.id == id)
         .ok_or("Unknown project".into())
+}
+impl Project {
+    fn documentation_page(&self) -> Option<&'static str> {
+        if self.id == "dcp" {
+            Some("projects/dcp.html")
+        } else {
+            self.page
+        }
+    }
 }
 fn stylesheet() -> String {
     let mut css =
@@ -174,7 +183,7 @@ fn stylesheet() -> String {
     css += include_str!("../assets/base.css");
     css
 }
-fn dropdown(active: &Project, prefix: &str) -> String {
+pub(crate) fn dropdown(active: &Project, prefix: &str) -> String {
     let mut html = format!(
         "<details class=\"project-switcher\">\n<summary class=\"brand project-trigger\" aria-label=\"{} — switch project\"><img src=\"{prefix}theme/{}.svg\" width=\"30\" height=\"30\" alt=\"\">{}<span class=\"project-chevron\" aria-hidden=\"true\">⌄</span></summary>\n<nav class=\"project-menu\" aria-label=\"Choose an FPL project\">\n",
         active.name, active.id, active.name
@@ -183,7 +192,11 @@ fn dropdown(active: &Project, prefix: &str) -> String {
     for p in &PROJECTS {
         let (url, current, check) = if p.id == active.id {
             (
-                format!("{prefix}{}", active.page.unwrap_or("index.html")),
+                if active.id == "dcp" {
+                    active.url.into()
+                } else {
+                    format!("{prefix}{}", active.page.unwrap_or("index.html"))
+                },
                 " aria-current=\"page\"",
                 " ✓",
             )
@@ -348,7 +361,7 @@ fn main() -> Result<()> {
             let page_project = if active.id == "fungos" {
                 PROJECTS
                     .iter()
-                    .find(|project| project.page == Some(relative))
+                    .find(|project| project.documentation_page() == Some(relative))
                     .unwrap_or(active)
             } else {
                 active
@@ -367,6 +380,11 @@ fn main() -> Result<()> {
     sync(
         &site.join("theme/switcher.js"),
         include_bytes!("../assets/switcher.js"),
+        check,
+    )?;
+    sync(
+        &site.join("theme/docs.js"),
+        include_bytes!("../assets/docs.js"),
         check,
     )?;
     for p in &PROJECTS {
@@ -445,6 +463,9 @@ mod tests {
                 .contains("UMIE — switch project")
         );
         assert!(render_page(original, project("fungos").unwrap(), "../").is_err());
+        let dcp = project("dcp").unwrap();
+        assert_eq!(dcp.documentation_page(), Some("projects/dcp.html"));
+        assert!(dropdown(dcp, "../").contains("href=\"https://dcp.fpl.dev/\" aria-current"));
     }
     #[test]
     fn unknown_and_malformed_fail() {

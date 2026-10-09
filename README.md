@@ -60,3 +60,80 @@ Unibus overview pages live in the fungOS consumer at `dist/projects/`. Their
 registered paths select their own themes; other pages retain the site theme.
 Content belongs to the site repository, while logos, navigation and tokens
 belong here. Local project links work on previews as well as the published site.
+
+## Canonical technical documentation
+
+`cargo run --bin docs --` publishes repository-owned CommonMark (tables,
+strikethrough, task lists) with real source provenance. It does not crawl websites
+or run source examples. Raw embedded HTML renders as text, and headings receive
+stable anchors. The source is separate from the generated HTML and adjacent `.md`
+export; the latter preserves all original bytes, including author metadata.
+
+Manual runbook (the same commands work in CI):
+
+1. Write/update `docs-source/projects/example.md` in the capability/site owner.
+   Validate statements and examples against the owning implementation. Commit the
+   canonical Markdown; unrelated dirty repository files do not block publication.
+2. Optionally record reviewed code using PedalKernel's convention:
+
+   ```yaml
+   ---
+   title: Example reference
+   source_commit: FULL_40_CHARACTER_REVIEWED_CODE_SHA
+   watches:
+     - src/interfaces.rs
+     - recipes/
+   ---
+   ```
+
+   The baseline is author evidence, never rewritten by regeneration. Other
+   frontmatter belongs to the authoring project; this tool is not Wiki admission
+   and does not replace Wiki's visibility or authorization validation.
+3. Render from the committed source, identifying the source repository URL and
+   the independent code repository explicitly when review metadata is present:
+
+   ```sh
+   cargo run --bin docs -- \
+     --source /checkout/site/docs-source/projects/example.md \
+     --output /checkout/site/dist/projects/example.html \
+     --site /checkout/site/dist --project umie \
+     --repository-url https://github.com/owner/site \
+     --code-repository /checkout/umie \
+     --code-url https://github.com/FuturePresentLabs/umie
+   ```
+
+4. Run the theme installer for that site's root, which supplies `theme/docs.js`,
+   CSS, icons, and consistent navigation. Append `--check` to the docs command
+   to reject generated HTML/Markdown drift. Append `--fail-on-stale` to require
+   unchanged watched source. Without that flag stale pages render an explicit
+   revalidation notice, including changed commits or uncommitted watched changes.
+5. Verify published links and examples, commit generated artifacts, and deploy
+   through the site's existing hosting pipeline. Roll back via the previous
+   canonical source revision and regenerate; do not hand-edit generated output.
+
+Provenance shows the latest commit **affecting that Markdown file**, its subject
+and date, and a revision-pinned source link. Commits only affecting generated
+output do not advance that provenance. Reviewed code commits must resolve and be
+ancestors of the explicit code checkout. Missing/untracked watched paths fail;
+changed paths are reported visibly. A directory watch must contain tracked files.
+A source file with uncommitted edits or no tracked history fails publication.
+
+Copy for LLM fetches the exact `.md` export on the user's click. Successful copies
+are acknowledged; failed requests, permission denial, and insecure contexts
+produce a visible error and link to the Markdown download. This is a small browser
+UI boundary; all generation/provenance is Rust. No remote requests happen during
+reference generation. Tests: `cargo test` and `node --test tests/docs-copy.cjs`.
+
+For repeatable multi-page publication, store a tab-separated manifest in the site
+owner. `cargo run --bin docs -- --manifest /site/docs.tsv [--check]
+[--fail-on-stale]` accepts seven columns (no header): source Markdown, output HTML,
+site root, project ID, source-repository HTTPS URL, code-repository checkout, and
+code-repository HTTPS URL. Paths resolve relative to the manifest; `-` means an
+absent optional code repository/URL. Lines starting `#` are comments. This avoids
+separate generation scripts in each consumer. Each file is written atomically;
+run all checks successfully before publishing the complete site.
+
+Rendering rewrites relative Markdown links to their canonical source repository
+at the documentation revision; absolute URLs and page anchors remain unchanged.
+The `.md` export is never rewritten. Canonical source, not the generated output
+folder, defines relative-link meaning. Output traversal through symlinks fails.
