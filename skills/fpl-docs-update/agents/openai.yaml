@@ -1,0 +1,4 @@
+interface:
+  display_name: "FPL Documentation Updates"
+  short_description: "Refresh source-backed docs and model support matrices"
+  default_prompt: "Use $fpl-docs-update to refresh the project documentation, regenerate its catalogs, and verify provenance and Markdown exports."

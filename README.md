@@ -137,3 +137,10 @@ Rendering rewrites relative Markdown links to their canonical source repository
 at the documentation revision; absolute URLs and page anchors remain unchanged.
 The `.md` export is never rewritten. Canonical source, not the generated output
 folder, defines relative-link meaning. Output traversal through symlinks fails.
+
+## Agent skill
+
+`skills/fpl-docs-update/` packages the documentation maintenance workflow. Install
+that directory in your agent's skill location; Codex can invoke `$fpl-docs-update`.
+The skill calls the existing publisher and owner catalogs, with separate reviewed
+code evidence, generated-file checks and task-authorized publication.
