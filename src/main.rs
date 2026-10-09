@@ -284,6 +284,27 @@ fn pages(root: &Path) -> Result<Vec<PathBuf>> {
     pages.sort();
     Ok(pages)
 }
+// Stable asset paths are served immutable by Fab. A revision in the URL prevents
+// new HTML from combining with an old browser/CDN stylesheet or script.
+fn version_assets(source: &str, revision: &str) -> String {
+    let mut result = source.to_owned();
+    for extension in [".css", ".js"] {
+        let mut offset = 0;
+        while let Some(found) = result[offset..].find(extension) {
+            let end = offset + found + extension.len();
+            let tail = &result[end..];
+            let old_end = if tail.starts_with("?v=") {
+                end + tail.find(['\"', '\'']).unwrap_or(tail.len())
+            } else { end };
+            if result[old_end..].starts_with(['\"', '\'']) {
+                let query = format!("?v={revision}");
+                result.replace_range(end..old_end, &query);
+                offset = end + query.len();
+            } else { offset = end; }
+        }
+    }
+    result
+}
 fn sync(path: &Path, bytes: &[u8], check: bool) -> Result<()> {
     if check {
         if fs::read(path)? != bytes {
@@ -367,7 +388,7 @@ fn main() -> Result<()> {
             };
             Ok((
                 p,
-                render_page(&fs::read_to_string(p)?, page_project, &prefix)?,
+                version_assets(&render_page(&fs::read_to_string(p)?, page_project, &prefix)?, &revision),
             ))
         })
         .collect::<Result<Vec<_>>>()?;
@@ -411,6 +432,14 @@ fn main() -> Result<()> {
     for (path, html) in rendered {
         sync(path, html.as_bytes(), check)?;
     }
+    // Consumer stylesheets can import the shared theme; version those imports too.
+    for name in ["distro.css", "style.css", "styles.css"] {
+        let path = site.join(name);
+        if path.exists() {
+            let css = fs::read_to_string(&path)?;
+            sync(&path, version_assets(&css, &revision).as_bytes(), check)?;
+        }
+    }
     println!(
         "{} {} pages for {} at {}",
         if check { "Checked" } else { "Updated" },
@@ -447,6 +476,15 @@ mod tests {
         let once = render_page(original, p, "").unwrap();
         assert_eq!(render_page(&once, p, "").unwrap(), once);
         assert!(once.contains("data-project=\"holodeck\""));
+    }
+    #[test]
+    fn immutable_assets_get_current_revision() {
+        let source = "<link href=\"../theme/theme.css\"><script src=\"theme/docs.js?v=old\"></script>";
+        let once = version_assets(source, "new");
+        assert!(once.contains("theme.css?v=new\""));
+        assert!(once.contains("docs.js?v=new\""));
+        assert_eq!(version_assets(&once, "new"), once);
+        assert_eq!(version_assets("@import url(\"theme/theme.css\");", "new"), "@import url(\"theme/theme.css?v=new\");");
     }
     #[test]
     fn project_pages_keep_their_identity_and_local_links() {
