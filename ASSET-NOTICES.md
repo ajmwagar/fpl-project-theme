@@ -7,3 +7,7 @@
   project mark/trademark ownership is retained. Its use identifies the project.
 
 The theme license does not replace upstream logo terms or grant endorsement.
+
+- `assets/dcp.svg`: unmodified project favicon obtained from
+  https://dcp.fpl.dev/favicon.svg, identifying Decision Catalog Protocol.
+  Upstream ownership applies; this is not original theme artwork.

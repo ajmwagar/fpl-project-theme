@@ -101,3 +101,7 @@ footer { display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; 
 .button:hover { background:var(--button-hover); }
 .button.primary:hover { background:var(--button-active); color:white; }
 html[data-project="fungos"] tbody th { width:22%; }
+.project-group { margin:5px 4px 0; padding:9px 6px 4px; border-top:1px solid var(--line); font-size:11px; font-weight:600; color:var(--muted); letter-spacing:.04em; }
+.project-kind { display:block; font-size:10px; font-weight:400; color:var(--muted); line-height:1.4; }
+.project-dcp { border-left:2px solid var(--project-page); }
+.project-dcp>span:first-of-type { font-family:ui-monospace,Consolas,monospace; }

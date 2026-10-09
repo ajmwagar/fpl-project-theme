@@ -10,15 +10,17 @@ type Result<T> = std::result::Result<T, Box<dyn Error>>;
 struct Project {
     id: &'static str,
     name: &'static str,
+    protocol: bool,
     url: &'static str,
     colors: [&'static str; 7],
     accents: &'static [(&'static str, &'static str)],
     icon: &'static str,
 }
-const PROJECTS: [Project; 2] = [
+const PROJECTS: [Project; 3] = [
     Project {
         id: "holodeck",
         name: "Holodeck",
+        protocol: false,
         url: "https://holodeck.fpl.dev/",
         colors: [
             "#fafaf7", "#e9eceb", "#25313a", "#59666d", "#cbd2d4", "#245b81", "#203440",
@@ -41,6 +43,7 @@ const PROJECTS: [Project; 2] = [
     Project {
         id: "fungos",
         name: "fungOS",
+        protocol: false,
         url: "https://fungos.dev/",
         colors: [
             "#e5e8e2", "#c9cdca", "#202d26", "#46554b", "#a0aaa0", "#28543b", "#283d31",
@@ -59,6 +62,29 @@ const PROJECTS: [Project; 2] = [
             ("code-bg", "#dce0d7"),
         ],
         icon: include_str!("../assets/fungos.svg"),
+    },
+    Project {
+        id: "dcp",
+        name: "DCP",
+        protocol: true,
+        url: "https://dcp.fpl.dev/",
+        colors: [
+            "#f2f0e8", "#d9ff43", "#10110f", "#595b50", "#242520", "#0c79d8", "#10110f",
+        ],
+        accents: &[
+            ("header-rule", "#d9ff43"),
+            ("header-ink", "#f2f0e8"),
+            ("focus", "#0c79d8"),
+            ("note-rule", "#d9ff43"),
+            ("button-border", "#242520"),
+            ("button-bg", "#f2f0e8"),
+            ("button-fill", "#10110f"),
+            ("button-hover", "#d9ff43"),
+            ("button-active", "#242520"),
+            ("surface", "#e6e4db"),
+            ("code-bg", "#e6e4db"),
+        ],
+        icon: include_str!("../assets/dcp.svg"),
     },
 ];
 fn project(id: &str) -> Result<&'static Project> {
@@ -92,6 +118,7 @@ fn stylesheet() -> String {
 }
 fn dropdown(active: &Project, prefix: &str) -> String {
     let mut html=format!("<details class=\"project-switcher\">\n<summary class=\"brand project-trigger\" aria-label=\"{} — switch project\"><img src=\"{prefix}theme/{}.svg\" width=\"30\" height=\"30\" alt=\"\">{}<span class=\"project-chevron\" aria-hidden=\"true\">⌄</span></summary>\n<nav class=\"project-menu\" aria-label=\"Choose an FPL project\">\n",active.name,active.id,active.name);
+    let mut protocol_heading = false;
     for p in &PROJECTS {
         let (url, current, check) = if p.id == active.id {
             (
@@ -102,7 +129,16 @@ fn dropdown(active: &Project, prefix: &str) -> String {
         } else {
             (p.url.into(), "", "")
         };
-        html+=&format!("<a class=\"project-option project-{}\" href=\"{url}\"{current}><img src=\"{prefix}theme/{}.svg\" width=\"30\" height=\"30\" alt=\"\"><span>{}{check}</span><span class=\"project-palette\" role=\"img\" aria-label=\"{} theme colors\"><i></i><i></i><i></i></span></a>\n",p.id,p.id,p.name,p.name);
+        if p.protocol && !protocol_heading {
+            html += "<div class=\"project-group\">Protocols</div>\n";
+            protocol_heading = true;
+        }
+        let subtitle = if p.protocol {
+            "<small class=\"project-kind\">Decision Catalog Protocol</small>"
+        } else {
+            ""
+        };
+        html+=&format!("<a class=\"project-option project-{}\" href=\"{url}\"{current}><img src=\"{prefix}theme/{}.svg\" width=\"30\" height=\"30\" alt=\"\"><span>{}{check}{subtitle}</span><span class=\"project-palette\" role=\"img\" aria-label=\"{} theme colors\"><i></i><i></i><i></i></span></a>\n",p.id,p.id,p.name,p.name);
     }
     html += "</nav>\n</details>";
     html
@@ -281,6 +317,10 @@ mod tests {
         assert!(html.contains("href=\"../index.html\" aria-current"));
         assert!(html.contains("href=\"https://holodeck.fpl.dev/\""));
         assert!(html.contains("../theme/fungos.svg"));
+        assert!(html.contains("href=\"https://dcp.fpl.dev/\""));
+        assert!(html.contains("project-group\">Protocols"));
+        assert!(html.contains("Decision Catalog Protocol"));
+        assert!(html.contains("../theme/dcp.svg"));
     }
     #[test]
     fn install_is_idempotent() {
