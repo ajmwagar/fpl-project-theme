@@ -8,7 +8,7 @@ a:focus-visible,summary:focus-visible,.table-scroll:focus-visible { outline:3px 
 .wrap { width:min(var(--measure),calc(100% - 32px)); margin-inline:auto; }
 .skip,.skip-link { position:absolute; top:-80px; left:20px; padding:8px 14px; background:var(--paper); z-index:2; }
 .skip:focus,.skip-link:focus { top:10px; }
-.masthead,.manual-page>header { background:var(--header); color:var(--header-ink); border-bottom:4px solid var(--header-rule); }
+.masthead,.manual-page>header { position:relative; z-index:1; background:var(--header); color:var(--header-ink); border-bottom:4px solid var(--header-rule); }
 .masthead .wrap,.manual-page>header .wrap { display:flex; align-items:center; justify-content:space-between; gap:24px; min-height:72px; padding-block:13px; flex-wrap:wrap; }
 .brand { display:inline-flex; gap:10px; align-items:center; color:inherit; font-weight:650; font-size:23px; text-decoration:none; }
 .masthead nav,.manual-page>header nav { display:flex; gap:24px; flex-wrap:wrap; font-size:14px; }
