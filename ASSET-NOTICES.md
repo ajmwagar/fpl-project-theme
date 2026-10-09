@@ -11,3 +11,6 @@ The theme license does not replace upstream logo terms or grant endorsement.
 - `assets/dcp.svg`: unmodified project favicon obtained from
   https://dcp.fpl.dev/favicon.svg, identifying Decision Catalog Protocol.
   Upstream ownership applies; this is not original theme artwork.
+
+- `assets/umie.svg` and `assets/unibus.svg`: original project marks created for
+  this shared theme. Artwork is AGPL-3.0-or-later; names identify the projects.

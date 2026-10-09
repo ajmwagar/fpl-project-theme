@@ -3,14 +3,13 @@
 Shared static project-site styles and an accessible project switcher for Holodeck
 and fungOS. Each project keeps its identity through theme tokens and its logo.
 
-- `assets/base.css` owns layout, typography and dropdown behavior.
+- `assets/base.css` owns layout and typography; `assets/switcher.js` owns menu dismissal.
 - `src/main.rs` owns the project registry, URLs and color palettes.
 - `assets/*.svg` holds the canonical switcher logos with separate notices.
 - The Rust installer generates a revision-pinned `theme/` directory and replaces
   the brand component on every HTML page, including nested documentation pages.
 
-No browser JavaScript, external font, runtime theme service or build dependency
-is required by a consuming site. Generated files are distribution snapshots;
+No external font, runtime theme service or build dependency is required by a consuming site. Generated files are distribution snapshots;
 edit this repository and regenerate rather than maintaining parallel CSS.
 
 ## Apply / verify
@@ -55,3 +54,9 @@ The source repository is initially private; the published styles remain readable
 The dropdown groups DCP under **Protocols**, with its official mark, a protocol
 subtitle and its own themed card background. DCP links to its
 own site; adding it here does not replace or restyle that site.
+
+fungOS appears first, followed by applications and then protocols. UMIE and
+Unibus overview pages live in the fungOS consumer at `dist/projects/`. Their
+registered paths select their own themes; other pages retain the site theme.
+Content belongs to the site repository, while logos, navigation and tokens
+belong here. Local project links work on previews as well as the published site.

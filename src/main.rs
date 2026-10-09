@@ -11,39 +11,20 @@ struct Project {
     id: &'static str,
     name: &'static str,
     protocol: bool,
+    subtitle: &'static str,
+    page: Option<&'static str>,
     url: &'static str,
     colors: [&'static str; 7],
     accents: &'static [(&'static str, &'static str)],
     icon: &'static str,
 }
-const PROJECTS: [Project; 3] = [
-    Project {
-        id: "holodeck",
-        name: "Holodeck",
-        protocol: false,
-        url: "https://holodeck.fpl.dev/",
-        colors: [
-            "#fafaf7", "#e9eceb", "#25313a", "#59666d", "#cbd2d4", "#245b81", "#203440",
-        ],
-        accents: &[
-            ("header-rule", "#6c919e"),
-            ("header-ink", "#f5f6f2"),
-            ("focus", "#ae7222"),
-            ("note-rule", "#7896a2"),
-            ("button-border", "#7a94a1"),
-            ("button-bg", "#edf2f2"),
-            ("button-fill", "#245b81"),
-            ("button-hover", "#e8edef"),
-            ("button-active", "#203440"),
-            ("surface", "#e8edef"),
-            ("code-bg", "#eef1ef"),
-        ],
-        icon: include_str!("../assets/holodeck.svg"),
-    },
+const PROJECTS: [Project; 5] = [
     Project {
         id: "fungos",
         name: "fungOS",
         protocol: false,
+        subtitle: "",
+        page: None,
         url: "https://fungos.dev/",
         colors: [
             "#e5e8e2", "#c9cdca", "#202d26", "#46554b", "#a0aaa0", "#28543b", "#283d31",
@@ -64,9 +45,61 @@ const PROJECTS: [Project; 3] = [
         icon: include_str!("../assets/fungos.svg"),
     },
     Project {
+        id: "holodeck",
+        name: "Holodeck",
+        protocol: false,
+        subtitle: "",
+        page: None,
+        url: "https://holodeck.fpl.dev/",
+        colors: [
+            "#fafaf7", "#e9eceb", "#25313a", "#59666d", "#cbd2d4", "#245b81", "#203440",
+        ],
+        accents: &[
+            ("header-rule", "#6c919e"),
+            ("header-ink", "#f5f6f2"),
+            ("focus", "#ae7222"),
+            ("note-rule", "#7896a2"),
+            ("button-border", "#7a94a1"),
+            ("button-bg", "#edf2f2"),
+            ("button-fill", "#245b81"),
+            ("button-hover", "#e8edef"),
+            ("button-active", "#203440"),
+            ("surface", "#e8edef"),
+            ("code-bg", "#eef1ef"),
+        ],
+        icon: include_str!("../assets/holodeck.svg"),
+    },
+    Project {
+        id: "umie",
+        name: "UMIE",
+        protocol: false,
+        subtitle: "Modular inference engine",
+        page: Some("projects/umie.html"),
+        url: "https://fungos.dev/projects/umie.html",
+        colors: [
+            "#eeeaf2", "#d7d1df", "#302738", "#64596d", "#b7adbf", "#65487d", "#40304e",
+        ],
+        accents: &[
+            ("header-rule", "#9e85b4"),
+            ("header-ink", "#f7f1fc"),
+            ("focus", "#986b2c"),
+            ("note-rule", "#9e85b4"),
+            ("button-border", "#9e85b4"),
+            ("button-bg", "#eeeaf2"),
+            ("button-fill", "#65487d"),
+            ("button-hover", "#e0d7e9"),
+            ("button-active", "#40304e"),
+            ("surface", "#e0d7e9"),
+            ("code-bg", "#e0d7e9"),
+        ],
+        icon: include_str!("../assets/umie.svg"),
+    },
+    Project {
         id: "dcp",
         name: "DCP",
         protocol: true,
+        subtitle: "Decision Catalog Protocol",
+        page: None,
         url: "https://dcp.fpl.dev/",
         colors: [
             "#f2f0e8", "#d9ff43", "#10110f", "#595b50", "#242520", "#0c79d8", "#10110f",
@@ -85,6 +118,31 @@ const PROJECTS: [Project; 3] = [
             ("code-bg", "#e6e4db"),
         ],
         icon: include_str!("../assets/dcp.svg"),
+    },
+    Project {
+        id: "unibus",
+        name: "Unibus",
+        protocol: true,
+        subtitle: "Granted message transport",
+        page: Some("projects/unibus.html"),
+        url: "https://fungos.dev/projects/unibus.html",
+        colors: [
+            "#e7eef0", "#cadadc", "#223b40", "#49666b", "#9bb7bc", "#216671", "#21484f",
+        ],
+        accents: &[
+            ("header-rule", "#76aeb7"),
+            ("header-ink", "#eff8f8"),
+            ("focus", "#986b2c"),
+            ("note-rule", "#76aeb7"),
+            ("button-border", "#76aeb7"),
+            ("button-bg", "#e7eef0"),
+            ("button-fill", "#216671"),
+            ("button-hover", "#d7e6e8"),
+            ("button-active", "#21484f"),
+            ("surface", "#d7e6e8"),
+            ("code-bg", "#d7e6e8"),
+        ],
+        icon: include_str!("../assets/unibus.svg"),
     },
 ];
 fn project(id: &str) -> Result<&'static Project> {
@@ -117,28 +175,46 @@ fn stylesheet() -> String {
     css
 }
 fn dropdown(active: &Project, prefix: &str) -> String {
-    let mut html=format!("<details class=\"project-switcher\">\n<summary class=\"brand project-trigger\" aria-label=\"{} — switch project\"><img src=\"{prefix}theme/{}.svg\" width=\"30\" height=\"30\" alt=\"\">{}<span class=\"project-chevron\" aria-hidden=\"true\">⌄</span></summary>\n<nav class=\"project-menu\" aria-label=\"Choose an FPL project\">\n",active.name,active.id,active.name);
+    let mut html = format!(
+        "<details class=\"project-switcher\">\n<summary class=\"brand project-trigger\" aria-label=\"{} — switch project\"><img src=\"{prefix}theme/{}.svg\" width=\"30\" height=\"30\" alt=\"\">{}<span class=\"project-chevron\" aria-hidden=\"true\">⌄</span></summary>\n<nav class=\"project-menu\" aria-label=\"Choose an FPL project\">\n",
+        active.name, active.id, active.name
+    );
     let mut protocol_heading = false;
     for p in &PROJECTS {
         let (url, current, check) = if p.id == active.id {
             (
-                format!("{prefix}index.html"),
+                format!("{prefix}{}", active.page.unwrap_or("index.html")),
                 " aria-current=\"page\"",
                 " ✓",
             )
         } else {
-            (p.url.into(), "", "")
+            (
+                if active.id == "fungos" || active.page.is_some() {
+                    match p.page {
+                        Some(page) => format!("{prefix}{page}"),
+                        None if p.id == "fungos" => format!("{prefix}index.html"),
+                        _ => p.url.into(),
+                    }
+                } else {
+                    p.url.into()
+                },
+                "",
+                "",
+            )
         };
         if p.protocol && !protocol_heading {
             html += "<div class=\"project-group\">Protocols</div>\n";
             protocol_heading = true;
         }
-        let subtitle = if p.protocol {
-            "<small class=\"project-kind\">Decision Catalog Protocol</small>"
+        let subtitle = if p.subtitle.is_empty() {
+            String::new()
         } else {
-            ""
+            format!("<small class=\"project-kind\">{}</small>", p.subtitle)
         };
-        html+=&format!("<a class=\"project-option project-{}\" href=\"{url}\"{current}><img src=\"{prefix}theme/{}.svg\" width=\"30\" height=\"30\" alt=\"\"><span>{}{check}{subtitle}</span></a>\n",p.id,p.id,p.name);
+        html += &format!(
+            "<a class=\"project-option project-{}\" href=\"{url}\"{current}><img src=\"{prefix}theme/{}.svg\" width=\"30\" height=\"30\" alt=\"\"><span>{}{check}{subtitle}</span></a>\n",
+            p.id, p.id, p.name
+        );
     }
     html += &format!("</nav><script defer src=\"{prefix}theme/switcher.js\"></script>\n</details>");
     html
@@ -223,7 +299,7 @@ fn main() -> Result<()> {
                 return Err(
                     "Usage: fpl-project-theme --site DIRECTORY --project holodeck|fungos [--check]"
                         .into(),
-                )
+                );
             }
         }
     }
@@ -265,7 +341,22 @@ fn main() -> Result<()> {
         .iter()
         .map(|p| {
             let prefix = "../".repeat(p.strip_prefix(&site)?.components().count() - 1);
-            Ok((p, render_page(&fs::read_to_string(p)?, active, &prefix)?))
+            let relative = p
+                .strip_prefix(&site)?
+                .to_str()
+                .ok_or("Non-UTF8 page path")?;
+            let page_project = if active.id == "fungos" {
+                PROJECTS
+                    .iter()
+                    .find(|project| project.page == Some(relative))
+                    .unwrap_or(active)
+            } else {
+                active
+            };
+            Ok((
+                p,
+                render_page(&fs::read_to_string(p)?, page_project, &prefix)?,
+            ))
         })
         .collect::<Result<Vec<_>>>()?;
     sync(
@@ -273,7 +364,11 @@ fn main() -> Result<()> {
         stylesheet().as_bytes(),
         check,
     )?;
-    sync(&site.join("theme/switcher.js"), include_bytes!("../assets/switcher.js"), check)?;
+    sync(
+        &site.join("theme/switcher.js"),
+        include_bytes!("../assets/switcher.js"),
+        check,
+    )?;
     for p in &PROJECTS {
         sync(
             &site.join(format!("theme/{}.svg", p.id)),
@@ -323,6 +418,10 @@ mod tests {
         assert!(html.contains("Decision Catalog Protocol"));
         assert!(html.contains("../theme/dcp.svg"));
         assert!(!html.contains("project-palette"));
+        assert!(html.find("project-fungos").unwrap() < html.find("project-holodeck").unwrap());
+        assert!(html.contains("href=\"../projects/umie.html\""));
+        assert!(html.find("Protocols</div>").unwrap() < html.find("project-unibus").unwrap());
+        assert!(html.contains("Granted message transport"));
     }
     #[test]
     fn install_is_idempotent() {
@@ -331,6 +430,21 @@ mod tests {
         let once = render_page(original, p, "").unwrap();
         assert_eq!(render_page(&once, p, "").unwrap(), once);
         assert!(once.contains("data-project=\"holodeck\""));
+    }
+    #[test]
+    fn project_pages_keep_their_identity_and_local_links() {
+        let p = project("umie").unwrap();
+        let html = dropdown(p, "../");
+        assert!(html.contains("href=\"../projects/umie.html\" aria-current"));
+        assert!(html.contains("href=\"../index.html\""));
+        assert!(html.contains("href=\"../projects/unibus.html\""));
+        let original = "<html data-project=\"umie\"><a class=\"brand\" href=\"#\">UMIE</a></html>";
+        assert!(
+            render_page(original, p, "../")
+                .unwrap()
+                .contains("UMIE — switch project")
+        );
+        assert!(render_page(original, project("fungos").unwrap(), "../").is_err());
     }
     #[test]
     fn unknown_and_malformed_fail() {
