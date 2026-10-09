@@ -44,6 +44,10 @@ review the diff. A missing or changed generated file fails `--check` visibly.
 4. Push consumer sites to their authorized hosting branches.
 5. Verify the live stylesheet, switcher and `theme/REVISION` after hosting.
 
+Wait for live HTML to reference the new revision before requesting its asset
+URLs. Fab serves static assets as immutable; requesting a future version URL
+before promotion can cache the previous artifact under that new URL.
+
 fungOS' website is a published snapshot in `ajmwagar/fungos-web`. If replacing
 that snapshot from the distribution source, run the installer again before
 publishing; this preserves the single theme owner.
